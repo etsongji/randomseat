@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         @media print {
             @page {
@@ -94,6 +95,9 @@
                     </button>
                     <button onclick="downloadPDF()" class="bg-purple-600 text-white px-6 py-3 rounded-md hover:bg-purple-700 transition" id="pdfBtn" disabled>
                         📥 PDF 다운로드
+                    </button>
+                    <button onclick="downloadExcel()" class="bg-emerald-600 text-white px-6 py-3 rounded-md hover:bg-emerald-700 transition" id="excelBtn" disabled>
+                        📊 엑셀 다운로드
                     </button>
                     <button onclick="window.print()" class="bg-pink-600 text-white px-6 py-3 rounded-md hover:bg-pink-700 transition" id="printBtn" disabled>
                         🖨️ 인쇄
@@ -279,6 +283,7 @@
             
             document.getElementById('viewBtn').disabled = false;
             document.getElementById('pdfBtn').disabled = false;
+            document.getElementById('excelBtn').disabled = false;
             document.getElementById('printBtn').disabled = false;
             document.getElementById('tips').classList.remove('hidden');
         }
@@ -427,6 +432,72 @@
             }
         }
 
+        function downloadExcel() {
+            const rows = parseInt(document.getElementById('rowsInput').value);
+            const cols = parseInt(document.getElementById('colsInput').value);
+            
+            // 엑셀 데이터 준비
+            const excelData = [];
+            
+            // 제목 행
+            const titleRow = ['자리배치도 (' + (viewMode === 'student' ? '학생 시점' : '교사 시점') + ')'];
+            excelData.push(titleRow);
+            excelData.push([]); // 빈 행
+            
+            // 교탁 위치 (학생 시점일 때)
+            if (viewMode === 'student') {
+                excelData.push(['', '', '', '【 교탁 】']);
+                excelData.push([]); // 빈 행
+            }
+            
+            // 자리 배치 데이터
+            const displaySeating = viewMode === 'teacher' 
+                ? seating.map(row => [...row].reverse()).reverse() 
+                : seating;
+            
+            displaySeating.forEach((row, rowIdx) => {
+                const excelRow = [];
+                row.forEach((student, colIdx) => {
+                    if (student) {
+                        excelRow.push(`${student.number} ${student.name}`);
+                    } else {
+                        excelRow.push('빈 자리');
+                    }
+                });
+                excelData.push(excelRow);
+            });
+            
+            // 교탁 위치 (교사 시점일 때)
+            if (viewMode === 'teacher') {
+                excelData.push([]); // 빈 행
+                excelData.push(['', '', '', '【 교탁 】']);
+            }
+            
+            // 워크북 생성
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
+            
+            // 열 너비 설정
+            const colWidths = [];
+            for (let i = 0; i < cols; i++) {
+                colWidths.push({ wch: 15 });
+            }
+            ws['!cols'] = colWidths;
+            
+            // 행 높이 설정
+            const rowHeights = [];
+            for (let i = 0; i < excelData.length; i++) {
+                rowHeights.push({ hpt: 25 });
+            }
+            ws['!rows'] = rowHeights;
+            
+            // 워크시트 추가
+            XLSX.utils.book_append_sheet(wb, ws, '자리배치도');
+            
+            // 파일 다운로드
+            XLSX.writeFile(wb, '자리배치도.xlsx');
+        }
+
         function resetAll() {
             students = [];
             seating = [];
@@ -440,6 +511,7 @@
             document.getElementById('tips').classList.add('hidden');
             document.getElementById('viewBtn').disabled = true;
             document.getElementById('pdfBtn').disabled = true;
+            document.getElementById('excelBtn').disabled = true;
             document.getElementById('printBtn').disabled = true;
             
             updateStudentSelect();
