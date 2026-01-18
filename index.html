@@ -336,7 +336,7 @@
                         }
 
                         const lockBtn = document.createElement('button');
-                        lockBtn.className = 'no-print absolute -top-2 -right-2 bg-white rounded-full p-1 shadow-md hover:shadow-lg transition border border-gray-300';
+                        lockBtn.className = 'lock-btn no-print absolute -top-2 -right-2 bg-white rounded-full p-1 shadow-md hover:shadow-lg transition border border-gray-300';
                         lockBtn.innerHTML = locked ? '🔒' : '🔓';
                         lockBtn.title = locked ? '고정 해제' : '자리 고정';
                         lockBtn.onclick = () => toggleLock(actualRowIdx, actualColIdx);
@@ -402,6 +402,11 @@
 
         async function downloadPDF() {
             const element = document.getElementById('seatingChart');
+            
+            // PDF 생성 전 자물쇠 버튼 숨기기
+            const lockButtons = element.querySelectorAll('.lock-btn');
+            lockButtons.forEach(btn => btn.style.display = 'none');
+            
             try {
                 const canvas = await html2canvas(element, {
                     scale: 2,
@@ -429,6 +434,9 @@
             } catch (error) {
                 console.error('PDF 생성 오류:', error);
                 alert('PDF 생성에 실패했습니다.');
+            } finally {
+                // PDF 생성 후 자물쇠 버튼 다시 보이기
+                lockButtons.forEach(btn => btn.style.display = '');
             }
         }
 
